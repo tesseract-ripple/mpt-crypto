@@ -111,7 +111,7 @@ jobs:
       contents: read
     uses: ./.github/workflows/build-native-libs.yml
 
-  # Build the portable WebAssembly module (mpt_crypto.js + .mjs + .wasm) for
+  # Build the portable WebAssembly module (mpt_crypto.js + .mjs + .web.mjs + .wasm) for
   # JS/TS consumers (e.g. xrpl.js) by calling the reusable workflow.
   wasm:
     name: Build WASM module

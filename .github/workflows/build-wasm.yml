@@ -2,7 +2,7 @@
 # Build WASM Module
 #
 # Builds the mpt-crypto C library as a single portable WebAssembly module
-# (mpt_crypto.js CommonJS glue + mpt_crypto.mjs ES-module glue + mpt_crypto.wasm)
+# (mpt_crypto.js CJS + mpt_crypto.mjs Node-ESM + mpt_crypto.web.mjs browser-ESM + mpt_crypto.wasm)
 # for JS/TS consumers (xrpl.js). There is NO OS x arch matrix: one wasm32
 # artifact runs in every browser and in Node/Deno/Bun on any
 # platform/endianness.
@@ -16,7 +16,7 @@
 # the build+test path is exercised), and on tag push (so build.yml can attach the
 # bundle to the release, which JS consumers download).
 #
-# The `build` job uploads `mpt-crypto-wasm-bundle` (mpt_crypto.js + .mjs + .wasm),
+# The `build` job uploads `mpt-crypto-wasm-bundle` (mpt_crypto.js + .mjs + .web.mjs + .wasm),
 # which the caller downloads and attaches to the GitHub release.
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -54,7 +54,7 @@ jobs:
         # Stage BEFORE testing so the smoke test validates exactly what ships.
         run: |
           mkdir -p output
-          cp emcc_out/mpt_crypto.js emcc_out/mpt_crypto.mjs emcc_out/mpt_crypto.wasm output/
+          cp emcc_out/mpt_crypto.js emcc_out/mpt_crypto.mjs emcc_out/mpt_crypto.web.mjs emcc_out/mpt_crypto.wasm output/
 
       - name: Test WASM module
         # Point the glue smoke test at the staged bundle, not emcc_out, so a file
