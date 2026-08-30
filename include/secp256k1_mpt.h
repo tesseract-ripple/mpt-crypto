@@ -447,6 +447,97 @@ secp256k1_compact_convertback_verify(
     secp256k1_pubkey const* PC_b,
     unsigned char const* context_id);
 
+/* ---------------------------------------------------------------------------
+ * ElGamal key rotation proofs
+ *
+ * Five of the key rotation variants share one relation, differing only in which
+ * ciphertext plays the decryption side, which key plays the re-encryption
+ * target, and the domain separation tag:
+ *
+ *   exists (b, sk, r) in Z_q^3 such that:
+ *     pk_old      = sk*G
+ *     C2 - sk*C1  = b*G
+ *     D1          = r*G
+ *     D2          = b*G + r*pk_target
+ *
+ * They therefore share an internal implementation and are all 4 scalars.
+ * Every element of every statement below is expected to be read from
+ * authenticated ledger state, never taken from a transaction field.
+ * ------------------------------------------------------------------------- */
+
+/** Compact proof size for the shared re-encryption relation: 4 scalars. */
+#define SECP256K1_ROTATE_REENCRYPT_PROOF_SIZE 128
+
+/**
+ * pi_mh - holder self-migration of the issuer mirror.
+ * Domain tag "CMPT_KEY_ROTATION_MIRROR_HOLDER_ONLY".
+ * Decryption side is the holder's ConfidentialBalanceSpending (S1, S2) under
+ * pk_H; the new issuer mirror (E1', E2') is created under pk_I'.
+ * Ledger precondition, not proven here: ConfidentialBalanceInbox == EncZero.
+ */
+SECP256K1_API int
+secp256k1_rotate_mirror_holder_prove(
+    secp256k1_context const* ctx,
+    unsigned char* proof_out,
+    uint64_t balance,
+    unsigned char const* sk_H,
+    unsigned char const* r_new,
+    secp256k1_pubkey const* pk_H,
+    secp256k1_pubkey const* S1,
+    secp256k1_pubkey const* S2,
+    secp256k1_pubkey const* pk_I_new,
+    secp256k1_pubkey const* E1_new,
+    secp256k1_pubkey const* E2_new,
+    unsigned char const* context_id);
+
+SECP256K1_API int
+secp256k1_rotate_mirror_holder_verify(
+    secp256k1_context const* ctx,
+    unsigned char const* proof,
+    secp256k1_pubkey const* pk_H,
+    secp256k1_pubkey const* S1,
+    secp256k1_pubkey const* S2,
+    secp256k1_pubkey const* pk_I_new,
+    secp256k1_pubkey const* E1_new,
+    secp256k1_pubkey const* E2_new,
+    unsigned char const* context_id);
+
+/**
+ * pi_recbal - issuer completes holder key-loss recovery.
+ * Domain tag "CMPT_KEY_ROTATION_RECOVER_BALANCE".
+ * Decryption side is the issuer mirror (E1, E2) under the current pk_I; the new
+ * spending balance (S1', S2') is created under the holder's registered
+ * RecoveryKey pk_H'.
+ * Ledger precondition, not proven here: the issuer mirror is already at the
+ * current issuer key epoch.
+ */
+SECP256K1_API int
+secp256k1_rotate_recover_balance_prove(
+    secp256k1_context const* ctx,
+    unsigned char* proof_out,
+    uint64_t balance,
+    unsigned char const* sk_I,
+    unsigned char const* r_new,
+    secp256k1_pubkey const* pk_I,
+    secp256k1_pubkey const* E1,
+    secp256k1_pubkey const* E2,
+    secp256k1_pubkey const* pk_H_recovery,
+    secp256k1_pubkey const* S1_new,
+    secp256k1_pubkey const* S2_new,
+    unsigned char const* context_id);
+
+SECP256K1_API int
+secp256k1_rotate_recover_balance_verify(
+    secp256k1_context const* ctx,
+    unsigned char const* proof,
+    secp256k1_pubkey const* pk_I,
+    secp256k1_pubkey const* E1,
+    secp256k1_pubkey const* E2,
+    secp256k1_pubkey const* pk_H_recovery,
+    secp256k1_pubkey const* S1_new,
+    secp256k1_pubkey const* S2_new,
+    unsigned char const* context_id);
+
 #ifdef __cplusplus
 }
 #endif
