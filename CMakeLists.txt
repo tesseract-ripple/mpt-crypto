@@ -35,6 +35,7 @@ set(MPT_CRYPTO_SOURCES
     src/proof_rotate_core.c
     src/proof_rotate_mirror_holder.c
     src/proof_rotate_recover_balance.c
+    src/proof_rotate_recovery_key.c
     src/utility/mpt_utility.cpp
 )
 add_library(mpt-crypto ${MPT_CRYPTO_SOURCES})

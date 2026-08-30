@@ -538,6 +538,33 @@ secp256k1_rotate_recover_balance_verify(
     secp256k1_pubkey const* S2_new,
     unsigned char const* context_id);
 
+/** Compact proof size for the recovery key possession relation: 2 scalars. */
+#define SECP256K1_ROTATE_RECOVERY_KEY_PROOF_SIZE 64
+
+/**
+ * pi_rec - holder registers a RecoveryKey after losing sk_H.
+ * Domain tag "CMPT_KEY_ROTATION_HOLDER_RECOVERY".
+ * A bare Schnorr proof of possession of sk_H' for the newly registered
+ * RecoveryKey pk_H'; it touches no balance and moves no funds.  The balance is
+ * migrated later by the issuer via secp256k1_rotate_recover_balance_*.
+ * Same relation as secp256k1_mpt_pok_sk_*, separated only by domain tag, so a
+ * registration proof cannot be replayed as a recovery-key proof or vice versa.
+ */
+SECP256K1_API int
+secp256k1_rotate_recovery_key_prove(
+    secp256k1_context const* ctx,
+    unsigned char* proof_out,
+    unsigned char const* sk_H_recovery,
+    secp256k1_pubkey const* pk_H_recovery,
+    unsigned char const* context_id);
+
+SECP256K1_API int
+secp256k1_rotate_recovery_key_verify(
+    secp256k1_context const* ctx,
+    unsigned char const* proof,
+    secp256k1_pubkey const* pk_H_recovery,
+    unsigned char const* context_id);
+
 #ifdef __cplusplus
 }
 #endif
