@@ -170,6 +170,81 @@ static void run_recbal_case(secp256k1_context const *ctx, uint64_t balance)
   printf("  cross-variant substitution rejected\n");
 }
 
+static void run_mirror_auditor_case(secp256k1_context const *ctx,
+                                    uint64_t balance)
+{
+  printf("\n--- pi_ma (balance=%llu) ---\n", (unsigned long long)balance);
+
+  unsigned char sk_I[32], r_old[32], r_new[32], sk_A_new[32], context_id[32];
+  secp256k1_pubkey pk_I, pk_A_new, E1, E2, F1_new, F2_new;
+  unsigned char proof[SECP256K1_ROTATE_REENCRYPT_PROOF_SIZE];
+
+  random_scalar(ctx, sk_I);
+  random_scalar(ctx, r_old);
+  random_scalar(ctx, r_new);
+  random_scalar(ctx, sk_A_new);
+  random_bytes(context_id);
+
+  EXPECT(secp256k1_ec_pubkey_create(ctx, &pk_I, sk_I));
+  EXPECT(secp256k1_ec_pubkey_create(ctx, &pk_A_new, sk_A_new));
+
+  /* Current issuer mirror, decrypted by the issuer. */
+  make_ct(ctx, &E1, &E2, balance, r_old, &pk_I);
+  /* New auditor mirror under the post-rotation auditor key. */
+  make_ct(ctx, &F1_new, &F2_new, balance, r_new, &pk_A_new);
+
+  EXPECT(secp256k1_rotate_mirror_auditor_prove(ctx, proof, balance, sk_I, r_new,
+                                               &pk_I, &E1, &E2, &pk_A_new,
+                                               &F1_new, &F2_new, context_id));
+  EXPECT(secp256k1_rotate_mirror_auditor_verify(
+      ctx, proof, &pk_I, &E1, &E2, &pk_A_new, &F1_new, &F2_new, context_id));
+  printf("  round-trip OK\n");
+
+  /* Domain separation: must not cross-verify against pi_mi's shape (same
+   * statement layout, different tag) via any other implemented variant. */
+  EXPECT(!secp256k1_rotate_mirror_holder_verify(
+      ctx, proof, &pk_I, &E1, &E2, &pk_A_new, &F1_new, &F2_new, context_id));
+  printf("  cross-variant substitution rejected\n");
+}
+
+static void run_mirror_holder_auditor_case(secp256k1_context const *ctx,
+                                           uint64_t balance)
+{
+  printf("\n--- pi_mha (balance=%llu) ---\n", (unsigned long long)balance);
+
+  unsigned char sk_H[32], r_old[32], r_new[32], sk_A_new[32], context_id[32];
+  secp256k1_pubkey pk_H, pk_A_new, S1, S2, F1_new, F2_new;
+  unsigned char proof[SECP256K1_ROTATE_REENCRYPT_PROOF_SIZE];
+
+  random_scalar(ctx, sk_H);
+  random_scalar(ctx, r_old);
+  random_scalar(ctx, r_new);
+  random_scalar(ctx, sk_A_new);
+  random_bytes(context_id);
+
+  EXPECT(secp256k1_ec_pubkey_create(ctx, &pk_H, sk_H));
+  EXPECT(secp256k1_ec_pubkey_create(ctx, &pk_A_new, sk_A_new));
+
+  /* CBS under the holder's key. */
+  make_ct(ctx, &S1, &S2, balance, r_old, &pk_H);
+  /* New auditor mirror under the post-rotation auditor key. */
+  make_ct(ctx, &F1_new, &F2_new, balance, r_new, &pk_A_new);
+
+  EXPECT(secp256k1_rotate_mirror_holder_auditor_prove(
+      ctx, proof, balance, sk_H, r_new, &pk_H, &S1, &S2, &pk_A_new, &F1_new,
+      &F2_new, context_id));
+  EXPECT(secp256k1_rotate_mirror_holder_auditor_verify(
+      ctx, proof, &pk_H, &S1, &S2, &pk_A_new, &F1_new, &F2_new, context_id));
+  printf("  round-trip OK\n");
+
+  /* Domain separation from pi_mh: same statement shape (CBS anchor), the new
+   * mirror target differs only by which key it names, so the tag alone must
+   * carry the distinction. */
+  EXPECT(!secp256k1_rotate_mirror_holder_verify(
+      ctx, proof, &pk_H, &S1, &S2, &pk_A_new, &F1_new, &F2_new, context_id));
+  printf("  cross-variant substitution rejected (pi_mh)\n");
+}
+
 int main(void)
 {
   secp256k1_context *ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN |
@@ -184,6 +259,12 @@ int main(void)
 
   run_recbal_case(ctx, 987654);
   run_recbal_case(ctx, 0);
+
+  run_mirror_auditor_case(ctx, 5551234);
+  run_mirror_auditor_case(ctx, 0);
+
+  run_mirror_holder_auditor_case(ctx, 4242424);
+  run_mirror_holder_auditor_case(ctx, 0);
 
   /* NULL context_id must round-trip on its own terms. */
   {
