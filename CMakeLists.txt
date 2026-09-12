@@ -37,6 +37,7 @@ set(MPT_CRYPTO_SOURCES
     src/proof_rotate_mirror_auditor.c
     src/proof_rotate_mirror_holder.c
     src/proof_rotate_mirror_holder_auditor.c
+    src/proof_rotate_mirror_issuer.c
     src/proof_rotate_recover_balance.c
     src/proof_rotate_recovery_key.c
     src/utility/mpt_utility.cpp

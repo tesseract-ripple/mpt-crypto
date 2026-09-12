@@ -469,6 +469,43 @@ secp256k1_compact_convertback_verify(
 #define SECP256K1_ROTATE_REENCRYPT_PROOF_SIZE 128
 
 /**
+ * pi_mi - issuer-anchored migration of the issuer mirror.
+ * Domain tag "CMPT_KEY_ROTATION_MIRROR_ISSUER_ONLY".
+ * Decryption side is the current issuer mirror (E1, E2) under the current
+ * pk_I; the new issuer mirror (E1', E2') is created under pk_I'. Both pk_I
+ * and (E1, E2) are resolved entirely from ledger state (XLS-99's fix for
+ * Finding f:pki): IssuerMirrorEncryptionKey on the holder's MPToken,
+ * falling back to InitialIssuerEncryptionKey on the MPTokenIssuance. No
+ * submitter-chosen previous-key transaction field is involved.
+ */
+SECP256K1_API int
+secp256k1_rotate_mirror_issuer_prove(
+    secp256k1_context const* ctx,
+    unsigned char* proof_out,
+    uint64_t balance,
+    unsigned char const* sk_I,
+    unsigned char const* r_new,
+    secp256k1_pubkey const* pk_I,
+    secp256k1_pubkey const* E1,
+    secp256k1_pubkey const* E2,
+    secp256k1_pubkey const* pk_I_new,
+    secp256k1_pubkey const* E1_new,
+    secp256k1_pubkey const* E2_new,
+    unsigned char const* context_id);
+
+SECP256K1_API int
+secp256k1_rotate_mirror_issuer_verify(
+    secp256k1_context const* ctx,
+    unsigned char const* proof,
+    secp256k1_pubkey const* pk_I,
+    secp256k1_pubkey const* E1,
+    secp256k1_pubkey const* E2,
+    secp256k1_pubkey const* pk_I_new,
+    secp256k1_pubkey const* E1_new,
+    secp256k1_pubkey const* E2_new,
+    unsigned char const* context_id);
+
+/**
  * pi_mh - holder self-migration of the issuer mirror.
  * Domain tag "CMPT_KEY_ROTATION_MIRROR_HOLDER_ONLY".
  * Decryption side is the holder's ConfidentialBalanceSpending (S1, S2) under

@@ -170,6 +170,44 @@ static void run_recbal_case(secp256k1_context const *ctx, uint64_t balance)
   printf("  cross-variant substitution rejected\n");
 }
 
+static void run_mirror_issuer_case(secp256k1_context const *ctx,
+                                   uint64_t balance)
+{
+  printf("\n--- pi_mi (balance=%llu) ---\n", (unsigned long long)balance);
+
+  unsigned char sk_I[32], r_old[32], r_new[32], sk_I_new[32], context_id[32];
+  secp256k1_pubkey pk_I, pk_I_new, E1, E2, E1_new, E2_new;
+  unsigned char proof[SECP256K1_ROTATE_REENCRYPT_PROOF_SIZE];
+
+  random_scalar(ctx, sk_I);
+  random_scalar(ctx, r_old);
+  random_scalar(ctx, r_new);
+  random_scalar(ctx, sk_I_new);
+  random_bytes(context_id);
+
+  EXPECT(secp256k1_ec_pubkey_create(ctx, &pk_I, sk_I));
+  EXPECT(secp256k1_ec_pubkey_create(ctx, &pk_I_new, sk_I_new));
+
+  /* Current issuer mirror, decrypted by the issuer. */
+  make_ct(ctx, &E1, &E2, balance, r_old, &pk_I);
+  /* New issuer mirror under the post-rotation issuer key. */
+  make_ct(ctx, &E1_new, &E2_new, balance, r_new, &pk_I_new);
+
+  EXPECT(secp256k1_rotate_mirror_issuer_prove(ctx, proof, balance, sk_I, r_new,
+                                              &pk_I, &E1, &E2, &pk_I_new,
+                                              &E1_new, &E2_new, context_id));
+  EXPECT(secp256k1_rotate_mirror_issuer_verify(
+      ctx, proof, &pk_I, &E1, &E2, &pk_I_new, &E1_new, &E2_new, context_id));
+  printf("  round-trip OK\n");
+
+  /* Domain separation: same statement shape as pi_mh/pi_recbal (issuer
+   * mirror to issuer mirror is structurally identical to holder-anchored
+   * migration), so the tag alone must carry the distinction. */
+  EXPECT(!secp256k1_rotate_mirror_holder_verify(
+      ctx, proof, &pk_I, &E1, &E2, &pk_I_new, &E1_new, &E2_new, context_id));
+  printf("  cross-variant substitution rejected\n");
+}
+
 static void run_mirror_auditor_case(secp256k1_context const *ctx,
                                     uint64_t balance)
 {
@@ -259,6 +297,9 @@ int main(void)
 
   run_recbal_case(ctx, 987654);
   run_recbal_case(ctx, 0);
+
+  run_mirror_issuer_case(ctx, 4443210);
+  run_mirror_issuer_case(ctx, 0);
 
   run_mirror_auditor_case(ctx, 5551234);
   run_mirror_auditor_case(ctx, 0);
