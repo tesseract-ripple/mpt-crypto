@@ -575,6 +575,96 @@ secp256k1_rotate_recover_balance_verify(
     secp256k1_pubkey const* S2_new,
     unsigned char const* context_id);
 
+/** Compact proof size for the AND-composed "both mirrors" relation: 4 scalars. */
+#define SECP256K1_ROTATE_BOTH_MIRRORS_PROOF_SIZE 128
+
+/**
+ * both-issuer - issuer-anchored AND-composed migration of both mirrors.
+ * Domain tag "CMPT_KEY_ROTATION_MIRROR_ISSUER_AND_AUDITOR".
+ * Decryption side is the current issuer mirror (E1, E2) under the current
+ * pk_I; simultaneously re-encrypts to a new issuer mirror (E1', E2') under
+ * pk_I' and a new auditor mirror (F1', F2') under pk_A', sharing one
+ * randomness value across both. The verifier unconditionally checks
+ * E1' == F1' (fix for Finding f:mhaud) -- this is NOT implied by the sigma
+ * proof and must never be skipped.
+ */
+SECP256K1_API int
+secp256k1_rotate_mirror_both_issuer_prove(
+    secp256k1_context const* ctx,
+    unsigned char* proof_out,
+    uint64_t balance,
+    unsigned char const* sk_I,
+    unsigned char const* r_new,
+    secp256k1_pubkey const* pk_I,
+    secp256k1_pubkey const* E1,
+    secp256k1_pubkey const* E2,
+    secp256k1_pubkey const* pk_I_new,
+    secp256k1_pubkey const* pk_A_new,
+    secp256k1_pubkey const* E1_new,
+    secp256k1_pubkey const* E2_new,
+    secp256k1_pubkey const* F1_new,
+    secp256k1_pubkey const* F2_new,
+    unsigned char const* context_id);
+
+SECP256K1_API int
+secp256k1_rotate_mirror_both_issuer_verify(
+    secp256k1_context const* ctx,
+    unsigned char const* proof,
+    secp256k1_pubkey const* pk_I,
+    secp256k1_pubkey const* E1,
+    secp256k1_pubkey const* E2,
+    secp256k1_pubkey const* pk_I_new,
+    secp256k1_pubkey const* pk_A_new,
+    secp256k1_pubkey const* E1_new,
+    secp256k1_pubkey const* E2_new,
+    secp256k1_pubkey const* F1_new,
+    secp256k1_pubkey const* F2_new,
+    unsigned char const* context_id);
+
+/**
+ * both-holder - holder-anchored AND-composed migration of both mirrors.
+ * Domain tag "CMPT_KEY_ROTATION_MIRROR_HOLDER_AND_AUDITOR".
+ * Decryption side is the holder's ConfidentialBalanceSpending (S1, S2)
+ * under pk_H; simultaneously re-encrypts to a new issuer mirror (E1', E2')
+ * under pk_I' and a new auditor mirror (F1', F2') under pk_A', sharing one
+ * randomness value across both. The verifier unconditionally checks
+ * E1' == F1' (fix for Finding f:mhaud) -- this is NOT implied by the sigma
+ * proof and must never be skipped.
+ * Ledger precondition, not proven here: ConfidentialBalanceInbox == EncZero.
+ */
+SECP256K1_API int
+secp256k1_rotate_mirror_both_holder_prove(
+    secp256k1_context const* ctx,
+    unsigned char* proof_out,
+    uint64_t balance,
+    unsigned char const* sk_H,
+    unsigned char const* r_new,
+    secp256k1_pubkey const* pk_H,
+    secp256k1_pubkey const* S1,
+    secp256k1_pubkey const* S2,
+    secp256k1_pubkey const* pk_I_new,
+    secp256k1_pubkey const* pk_A_new,
+    secp256k1_pubkey const* E1_new,
+    secp256k1_pubkey const* E2_new,
+    secp256k1_pubkey const* F1_new,
+    secp256k1_pubkey const* F2_new,
+    unsigned char const* context_id);
+
+SECP256K1_API int
+secp256k1_rotate_mirror_both_holder_verify(
+    secp256k1_context const* ctx,
+    unsigned char const* proof,
+    secp256k1_pubkey const* pk_H,
+    secp256k1_pubkey const* S1,
+    secp256k1_pubkey const* S2,
+    secp256k1_pubkey const* pk_I_new,
+    secp256k1_pubkey const* pk_A_new,
+    secp256k1_pubkey const* E1_new,
+    secp256k1_pubkey const* E2_new,
+    secp256k1_pubkey const* F1_new,
+    secp256k1_pubkey const* F2_new,
+    unsigned char const* context_id);
+
 /**
  * pi_ma - issuer-anchored migration of the auditor mirror.
  * Domain tag "CMPT_KEY_ROTATION_MIRROR_AUDITOR_ONLY".

@@ -87,6 +87,12 @@ add_mpt_test(
 )
 
 add_mpt_test(
+    test_rotate_mirror_both
+    test_rotate_mirror_both.c
+    DEPENDENCIES mpt-crypto secp256k1::secp256k1
+)
+
+add_mpt_test(
     test_elgamal_verify
     test_elgamal_verify.c
     DEPENDENCIES mpt-crypto secp256k1::secp256k1
